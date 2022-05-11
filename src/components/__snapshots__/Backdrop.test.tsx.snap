@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<Backdrop /> renders correctly 1`] = `
+<div>
+  <div
+    class="MuiBox-root css-4cxybv"
+  >
+    <div
+      class="MuiBox-root css-roaar6"
+      style="background-image: url(https://images.unsplash.com/photo-1417325384643-aac51acc9e5d?q=80&fm=jpeg&w=800&crop=entropy&fit=crop); background-position: 50% 50%; background-size: cover; filter: none;"
+    />
+    <div
+      class="MuiBox-root css-1ggxnpa"
+    />
+  </div>
+</div>
+`;

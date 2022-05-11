@@ -1,0 +1,72 @@
+name: CD
+on:
+  release:
+    types:
+      - created
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          path: |
+            node_modules
+            ~/.npm
+      - name: Install dependencies
+        if: ${{ steps.cache-dependencies.outputs.cache-hit == false }}
+        run: npm i --legacy-peer-deps
+      - name: Run tests
+        run: npm test
+        env:
+          REACT_APP_API_KEY_ACCUWEATHER: ${{ secrets.REACT_APP_API_KEY_ACCUWEATHER }}
+          REACT_APP_API_KEY_HERE: ${{ secrets.REACT_APP_API_KEY_HERE }}
+          REACT_APP_API_KEY_OPENWEATHERMAP: ${{ secrets.REACT_APP_API_KEY_OPENWEATHERMAP }}
+          REACT_APP_API_KEY_UNSPLASH: ${{ secrets.REACT_APP_API_KEY_UNSPLASH }}
+      - name: Save the build
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build/
+  package:
+    runs-on: macos-latest
+    needs:
+      - build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          path: |
+            node_modules
+            ~/.npm
+      - name: Install dependencies
+        if: ${{ steps.cache-dependencies.outputs.cache-hit == false }}
+        run: npm i --legacy-peer-deps
+      - name: Restore the build
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: build/
+      - name: Package application
+        run: npm run package
+      - name: Save the package
+        uses: actions/upload-artifact@v3
+        with:
+          name: package-mac
+          path: dist/Stormy-1.0.0.dmg

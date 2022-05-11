@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<PreferenceSubheader /> renders correctly 1`] = `
+<DocumentFragment>
+  <li
+    class="MuiListSubheader-root MuiListSubheader-gutters MuiListSubheader-sticky css-uob957-MuiListSubheader-root"
+    role="heading"
+  >
+    <span
+      aria-label=""
+      class="MuiTypography-root MuiTypography-caption  css-1wkfms4-MuiTypography-root"
+      data-mui-internal-clone-element="true"
+    >
+      dummy
+    </span>
+  </li>
+</DocumentFragment>
+`;
