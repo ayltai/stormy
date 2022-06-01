@@ -12,6 +12,7 @@ import { useAppSelector, } from './hooks';
 import { persistor, store, } from './redux';
 import { Home, Locations, Settings, } from './screens';
 import { palette, } from './styles';
+import { changeDarkMode, } from './utils';
 import './css/weather-icons.css';
 
 const AppRoot = () => {
@@ -27,6 +28,8 @@ const AppRoot = () => {
     const [ theme, setTheme, ] = useState(createAppTheme());
 
     useEffect(() => {
+        changeDarkMode(darkMode);
+
         setTheme(createAppTheme());
     }, [ darkMode, ]);
 

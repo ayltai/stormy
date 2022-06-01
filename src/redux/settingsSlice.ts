@@ -3,7 +3,7 @@ import i18next from 'i18next';
 
 import { BACKGROUND_BLUR, BACKGROUND_DARKEN, REFRESH_INTERVAL, } from '../Constants';
 import { LocationProvider, Place, TimeFormat, Unit, WeatherProvider, } from '../models';
-import { getLocale, handleError, isDarkMode, setAppAutoLaunch, } from '../utils';
+import { changeDarkMode, getLocale, handleError, isDarkMode, setAppAutoLaunch, } from '../utils';
 
 const DEFAULT_LOCATION : Place = {
     name      : 'Hong Kong International Airport, Sky Plaza Road, Chek Lap Kok',
@@ -58,6 +58,7 @@ const settingsSlice = createSlice({
         },
         setDarkMode : (state, action: PayloadAction<boolean>) => {
             state.darkMode = action.payload;
+            changeDarkMode(action.payload);
         },
         setAutoLaunch : (state, action: PayloadAction<boolean>) => {
             state.autoLaunch = action.payload;

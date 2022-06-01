@@ -44,6 +44,12 @@ export const getLocale = () => Intl.DateTimeFormat().resolvedOptions().locale;
 
 export const isDarkMode = () => nativeDarkMode;
 
+export const changeDarkMode = (darkMode : boolean) => {
+    nativeDarkMode = darkMode;
+
+    getElectron().ipcRenderer.send('change-dark-mode', darkMode);
+};
+
 export const openUrl = (uri : string) => getElectron().shell.openExternal(uri);
 
 export const setAppAutoLaunch = (enabled : boolean) => getElectron().ipcRenderer.send('set-auto-launch', enabled);

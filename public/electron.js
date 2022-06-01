@@ -83,6 +83,7 @@ app.whenReady().then(() => {
 
     ipcMain.on('get-app-path', event => event.sender.send('set-app-path', app.getAppPath()));
     ipcMain.on('get-dark-mode', event => event.sender.send('set-dark-mode', nativeTheme.shouldUseDarkColors));
+    ipcMain.on('change-dark-mode', (event, data) => nativeTheme.themeSource = data ? 'dark' : 'light');
     ipcMain.on('exit', () => app.quit());
 });
 
