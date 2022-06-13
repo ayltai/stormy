@@ -24,8 +24,8 @@ jobs:
       - name: Install dependencies
         if: ${{ steps.cache-dependencies.outputs.cache-hit == false }}
         run: npm i --legacy-peer-deps
-      - name: Run tests
-        run: npm test
+      - name: Build
+        run: npm run build
         env:
           REACT_APP_API_KEY_ACCUWEATHER: ${{ secrets.REACT_APP_API_KEY_ACCUWEATHER }}
           REACT_APP_API_KEY_HERE: ${{ secrets.REACT_APP_API_KEY_HERE }}
