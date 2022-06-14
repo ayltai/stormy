@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState, } from 'react';
 
 import { getWeatherQuery, } from '../apis';
 import { useAppSelector, } from '../hooks';
-import { convertSpeed, convertTemperature, getPartOfDay, handleError, } from '../utils';
+import { convertSpeed, convertTemperature, getAlphaForPrecipIntensity, getPartOfDay, handleError, makeTransparent, } from '../utils';
 
 import { ChartWrapper, } from './ChartWrapper';
 import { getWeatherIcon, } from './WeatherIcon';
@@ -46,21 +46,21 @@ export const WeatherChart = ({
 
     const [ scales,    setScales,    ] = useState({});
     const [ tooltips,  setTooltips,  ] = useState({});
-    const [ minScale,  setMinScale,  ] = useState<number>(0);
-    const [ maxScale,  setMaxScale,  ] = useState<number>(0);
+    const [ minTemp,   setMinTemp,   ] = useState<number>(0);
+    const [ maxTemp,   setMaxTemp,   ] = useState<number>(0);
+    const [ maxPrecip, setMaxPrecip, ] = useState<number | undefined>();
     const [ chartData, setChartData, ] = useState<ChartData<'line', number[], string>>({
         labels   : [],
         datasets : [],
     });
 
     const commonDataset = {
-        label           : '',
-        clip            : 8,
-        pointRadius     : 0,
-        pointHitRadius  : 16,
-        backgroundColor : darkMode ? theme.palette.primary.dark : theme.palette.primary.light,
-        borderColor     : darkMode ? theme.palette.info.dark : theme.palette.info.light,
-        tension         : 0.5,
+        label          : '',
+        clip           : 8,
+        pointRadius    : 0,
+        pointHitRadius : 16,
+        borderColor    : darkMode ? theme.palette.success.dark : theme.palette.success.light,
+        tension        : 0.5,
     };
 
     const createData = useCallback(() : ChartData<'line', number[], string> => ({
@@ -68,23 +68,21 @@ export const WeatherChart = ({
         datasets : [
             {
                 ...commonDataset,
-                yAxisID         : 'temp',
-                order           : 0,
-                data            : [],
-                clip            : 12,
-                pointRadius     : undefined,
-                backgroundColor : darkMode ? theme.palette.primary.dark : theme.palette.primary.light,
-                borderColor     : darkMode ? theme.palette.secondary.dark : theme.palette.secondary.light,
+                yAxisID     : 'temp',
+                order       : 0,
+                data        : [],
+                clip        : 12,
+                pointRadius : undefined,
+                borderColor : darkMode ? theme.palette.secondary.dark : theme.palette.secondary.light,
             },
             {
                 ...commonDataset,
-                yAxisID         : 'precip',
-                order           : 3,
-                data            : [],
-                clip            : 12,
-                fill            : 'origin',
-                backgroundColor : darkMode ? theme.palette.primary.dark : theme.palette.primary.light,
-                borderColor     : darkMode ? theme.palette.primary.dark : theme.palette.primary.light,
+                yAxisID     : 'precip',
+                order       : 3,
+                data        : [],
+                clip        : 12,
+                fill        : 'origin',
+                borderColor : darkMode ? theme.palette.primary.dark : theme.palette.primary.light,
             },
             {
                 label : '',
@@ -116,7 +114,7 @@ export const WeatherChart = ({
     }), [ darkMode, forecastType, theme, ]);
 
     const updateData = useCallback((newData : ChartData<'line', number[], string>) : ChartData<'line', number[], string> => {
-        if (data) {
+        if (data && maxPrecip !== undefined) {
             for (let i = 0; i < FORECAST_TYPES.length; i++) newData.datasets[i + 3].hidden = forecastType !== FORECAST_TYPES[i];
 
             const icons : HTMLImageElement[] = [];
@@ -148,11 +146,12 @@ export const WeatherChart = ({
                 icons.push(icon);
             }
 
-            newData.datasets[0].pointStyle = context => icons[context.dataIndex];
+            newData.datasets[0].pointStyle      = context => icons[context.dataIndex];
+            newData.datasets[1].backgroundColor = makeTransparent(theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.light, getAlphaForPrecipIntensity(maxPrecip));
         }
 
         return newData;
-    }, [ darkMode, data, forecastType, theme, timeFormat, unit, weatherProvider, ]);
+    }, [ darkMode, data, forecastType, maxPrecip, theme, timeFormat, unit, weatherProvider, ]);
 
     const commonScale = {
         position : 'right',
@@ -164,84 +163,80 @@ export const WeatherChart = ({
     };
 
     const createScales = useCallback(() => {
-        if (status === QueryStatus.fulfilled && chartData.datasets.length) {
-            const newScales = {
-                x      : {
-                    grid : {
-                        borderColor     : theme.palette.text.primary,
-                        drawOnChartArea : false,
-                        color           : theme.palette.text.primary,
-                    },
+        if (status === QueryStatus.fulfilled && chartData.datasets.length) return {
+            x      : {
+                grid : {
+                    borderColor     : theme.palette.text.primary,
+                    drawOnChartArea : false,
+                    color           : theme.palette.text.primary,
                 },
-                temp   : {
-                    position : 'left',
-                    grid     : {
-                        borderColor     : theme.palette.text.primary,
-                        drawOnChartArea : false,
-                        color           : theme.palette.text.primary,
-                    },
-                    min      : minScale,
-                    max      : maxScale,
-                    ticks    : {
-                        stepSize : maxScale - minScale,
-                        callback : (value : number) => convertTemperature({
-                            unit,
-                            temperature    : value,
-                            displayUnit    : true,
-                            fractionDigits : 0,
-                        }),
-                    },
+            },
+            temp   : {
+                position : 'left',
+                grid     : {
+                    borderColor     : theme.palette.text.primary,
+                    drawOnChartArea : false,
+                    color           : theme.palette.text.primary,
                 },
-                precip : {
-                    display  : false,
-                    position : 'left',
-                    min      : 0,
-                    max      : 100,
-                    ticks    : {
-                        stepSize : 50,
-                    },
+                min      : minTemp,
+                max      : maxTemp,
+                ticks    : {
+                    stepSize : maxTemp - minTemp,
+                    callback : (value : number) => convertTemperature({
+                        unit,
+                        temperature    : value,
+                        displayUnit    : true,
+                        fractionDigits : 0,
+                    }),
                 },
-                humidity : {
-                    ...commonScale,
-                    display : forecastType === FORECAST_TYPES[0],
-                    min     : 0,
-                    max     : 100,
-                    ticks   : {
-                        stepSize : 50,
-                        callback : (label : number | string) => `${label}%`,
-                    },
+            },
+            precip : {
+                display  : false,
+                position : 'left',
+                min      : 0,
+                max      : 100,
+                ticks    : {
+                    stepSize : 50,
                 },
-                windSpeed : {
-                    ...commonScale,
-                    display      : forecastType === FORECAST_TYPES[1],
-                    min          : 0,
-                    suggestedMax : Math.max(unit === 'metric' ? 200 : 120, ...chartData.datasets[4].data.map(item => Math.ceil(item))),
-                    ticks        : {
-                        stepSize : Math.max(unit === 'metric' ? 50 : 30, ...chartData.datasets[4].data.map(item => Math.ceil(item / 4))),
-                        callback : (value : number) => `${convertSpeed({
-                            unit,
-                            value,
-                            displayUnit    : true,
-                            fractionDigits : 0,
-                        })}`,
-                    },
+            },
+            humidity : {
+                ...commonScale,
+                display : forecastType === FORECAST_TYPES[0],
+                min     : 0,
+                max     : 100,
+                ticks   : {
+                    stepSize : 50,
+                    callback : (label : number | string) => `${label}%`,
                 },
-                uvIndex : {
-                    ...commonScale,
-                    display      : forecastType === FORECAST_TYPES[2],
-                    suggestedMin : 0,
-                    suggestedMax : 12,
-                    ticks        : {
-                        stepSize : 2,
-                    },
+            },
+            windSpeed : {
+                ...commonScale,
+                display      : forecastType === FORECAST_TYPES[1],
+                min          : 0,
+                suggestedMax : Math.max(unit === 'metric' ? 200 : 120, ...chartData.datasets[4].data.map(item => Math.ceil(item))),
+                ticks        : {
+                    stepSize : Math.max(unit === 'metric' ? 50 : 30, ...chartData.datasets[4].data.map(item => Math.ceil(item / 4))),
+                    callback : (value : number) => `${convertSpeed({
+                        unit,
+                        value,
+                        displayUnit    : true,
+                        fractionDigits : 0,
+                    })}`,
                 },
-            };
-
-            return newScales;
-        }
+            },
+            uvIndex : {
+                ...commonScale,
+                display      : forecastType === FORECAST_TYPES[2],
+                suggestedMin : 0,
+                suggestedMax : 12,
+                ticks        : {
+                    stepSize : 2,
+                },
+            },
+        };
 
         return {};
-    }, [ chartData, forecastType, theme, maxScale, minScale, status, unit, ]);
+    }, [ chartData, forecastType, theme, maxTemp, minTemp, status, unit, ]);
 
     const createTooltips = useCallback(() => ({
         displayColors : false,
@@ -270,8 +265,9 @@ export const WeatherChart = ({
 
     useEffect(() => {
         if (status === QueryStatus.fulfilled && chartData.datasets.length) {
-            setMinScale(Math.floor(Math.min(...chartData.datasets[0].data)));
-            setMaxScale(Math.ceil(Math.max(...chartData.datasets[0].data)));
+            setMinTemp(Math.floor(Math.min(...chartData.datasets[0].data)));
+            setMaxTemp(Math.ceil(Math.max(...chartData.datasets[0].data)));
+            setMaxPrecip(Math.ceil(Math.max(...chartData.datasets[2].data)));
         }
     }, [ chartData, status, ]);
 
@@ -280,11 +276,9 @@ export const WeatherChart = ({
             setScales(createScales());
             setTooltips(createTooltips());
         }
-    }, [ chartData, createTooltips, minScale, maxScale, status, ]);
+    }, [ chartData, createTooltips, minTemp, maxTemp, status, ]);
 
-    useEffect(() => {
-        if (error) handleError(error);
-    }, [ error, ]);
+    useEffect(() => error && handleError(error), [ error, ]);
 
     return (
         <ChartWrapper

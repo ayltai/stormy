@@ -5,7 +5,7 @@ import React, { useEffect, } from 'react';
 
 import { getWeatherQuery, } from '../apis';
 import { useAppSelector, } from '../hooks';
-import { capitalize, convertTemperature, handleError, } from '../utils';
+import { capitalize, convertTemperature, getAlphaForPrecipIntensity, handleError, makeTransparent, } from '../utils';
 
 import { Label, } from './Label';
 import { Temperature, } from './Temperature';
@@ -28,9 +28,7 @@ export const WeatherForecast = () => {
         pollingInterval : refreshInterval,
     });
 
-    useEffect(() => {
-        if (error) handleError(error);
-    }, [ error, ]);
+    useEffect(() => error && handleError(error), [ error, ]);
 
     return (
         <Grid
@@ -39,7 +37,7 @@ export const WeatherForecast = () => {
             justifyContent='space-evenly'>
             {status === QueryStatus.fulfilled && data && data.daily.slice(0, forecastDays).map((weather, index) => {
                 const StyledGrid = styled(Grid)(({ theme, }) => ({
-                    backgroundImage         : `linear-gradient(to top, ${theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.light} 0%, ${theme.palette.background.paper} ${Math.round(data.daily[index].precipProbability / 2.5)}%)`,
+                    backgroundImage         : `linear-gradient(to top, ${theme.palette.mode === 'dark' ? makeTransparent(theme.palette.primary.dark, getAlphaForPrecipIntensity(data.daily[index].precipIntensity / 24)) : makeTransparent(theme.palette.primary.light, getAlphaForPrecipIntensity(data.daily[index].precipIntensity / 24))} 0%, ${makeTransparent(theme.palette.background.paper, getAlphaForPrecipIntensity(data.daily[index].precipIntensity))} ${Math.round(data.daily[index].precipProbability / 2.5)}%)`,
                     borderBottomLeftRadius  : theme.shape.borderRadius,
                     borderBottomRightRadius : theme.shape.borderRadius,
                 }));
